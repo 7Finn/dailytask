@@ -1,6 +1,7 @@
 const axios = require('axios');
+const config = require('../../config/runner.json');
 
-const clientKey = 'YOUR CLIENT KEY';
+const clientKey = config.clientKey;
 
 // 创建验证码任务
 async function createTask(websiteUrl, websiteKey, taskType, pageAction) {
@@ -13,7 +14,7 @@ async function createTask(websiteUrl, websiteKey, taskType, pageAction) {
             "pageAction": pageAction,
             "type": taskType
         },
-        "softID": 'YOUR CLIENT KEY'
+        "softID": clientKey
     }
     
     const response = await axios.post(url, params);

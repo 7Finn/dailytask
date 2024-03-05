@@ -12,7 +12,7 @@ const { createTask, getTaskResult } = require('../../utils/yesCaptcha/yesCaptcha
 const MAX_RETRIES = 5; // 最大重试次数
 const MAX_PROXY_CHECK_ATTEMPTS = 3;
 
-const agent = new HttpsProxyAgent(config.proxy);
+const agentMap = {};
 const websiteKey = '0x4AAAAAAARdAuciFArKhVwt';
 const websiteUrl = 'https://artio.faucet.berachain.com/';
 headers = {
@@ -50,6 +50,7 @@ async function processAddresses(filePath) {
             .pipe(csv())
             .on('data', (row) => {
                 addresses.push(row.address);
+                agentMap[row.address] = new HttpsProxyAgent(row.proxy);
             })
             .on('end', () => {
                 console.log('地址读取完毕');
@@ -67,33 +68,34 @@ async function main(wallet) {
         const addresses = await processAddresses(config.walletPath);
         console.log('开始领取测试币');
 
-        let proxyVerified = false; // 代理验证标志
-        let proxyAttempts = 0; // 代理检查尝试次数
-
-        while (!proxyVerified && proxyAttempts < MAX_PROXY_CHECK_ATTEMPTS) {
-            console.log('测试代理IP是否正常');
-            try {
-                const response = await sendRequest('https://myip.ipip.net', {
-                    method: 'get', 
-                    httpAgent: agent, 
-                    httpsAgent: agent
-                });
-                console.log('验证成功, IP信息: ', response);
-                proxyVerified = true; // 代理验证成功
-            } catch (error) {
-                proxyAttempts++;
-                console.log('代理失效，等待1分钟后重新验证');
-                await sleep(60); // 等待1分钟
-            }
-        }
-
-        if (!proxyVerified) {
-            console.log('代理验证失败，无法继续执行任务');
-            return; // 如果代理验证失败，结束函数
-        }
 
         for (const address of addresses) {
             console.log(`领取地址: ${address}`);
+
+            let proxyVerified = false; // 代理验证标志
+            let proxyAttempts = 0; // 代理检查尝试次数
+
+            while (!proxyVerified && proxyAttempts < MAX_PROXY_CHECK_ATTEMPTS) {
+                console.log('测试代理IP是否正常');
+                try {
+                    const response = await sendRequest('https://myip.ipip.net', {
+                        method: 'get', 
+                        httpAgent: agentMap[address], 
+                        httpsAgent: agentMap[address]
+                    });
+                    console.log('验证成功, IP信息: ', response);
+                    proxyVerified = true; // 代理验证成功
+                } catch (error) {
+                    proxyAttempts++;
+                    console.log('代理失效，等待1分钟后重新验证');
+                    await sleep(60); // 等待1分钟
+                }
+            }
+
+            if (!proxyVerified) {
+                console.log('代理验证失败，无法继续执行任务');
+                return; // 如果代理验证失败，结束函数
+            }
 
             let attempts = 0;
             while (attempts < MAX_RETRIES) {
@@ -105,8 +107,8 @@ async function main(wallet) {
                     const data = { address: address };
                     const urlConfig = {
                         headers: headers,
-                        httpsAgent: agent,
-                        httpAgent: agent,
+                        httpsAgent: agentMap[address],
+                        httpAgent: agentMap[address],
                         method: 'post',
                         data: data,
                     };
