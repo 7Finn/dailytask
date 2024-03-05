@@ -36,7 +36,7 @@
 - minInterval：最小暂停秒数
 - maxInterval：最大暂停秒数
 - yescaptcha：在 utils/yescaptcha/yescaptcha.js中，将你购买的yescaptcha ApiKEY填入
-		购买链接：https://yescaptcha.com/i/u37t5k
+		购买链接：https://yescaptcha.com/i/3E7A5u
 
 #### 5、运行程序
 
