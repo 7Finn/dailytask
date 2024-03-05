@@ -50,6 +50,7 @@ async function processAddresses(filePath) {
             .pipe(csv())
             .on('data', (row) => {
                 addresses.push(row.address);
+                console.warn(row.address, row.proxy);
                 agentMap[row.address] = new HttpsProxyAgent(row.proxy);
             })
             .on('end', () => {
@@ -67,7 +68,8 @@ async function main(wallet) {
     try {
         const addresses = await processAddresses(config.walletPath);
         console.log('开始领取测试币');
-
+        // 随机打乱
+        addresses.sort(() => 0.5 - Math.random());
 
         for (const address of addresses) {
             console.log(`领取地址: ${address}`);
@@ -117,6 +119,9 @@ async function main(wallet) {
                     const txHash = response.msg;
                     console.log('领取成功✅ ', txHash);
                     attempts = MAX_RETRIES;
+                    const pauseTime = randomPause();
+                    console.log(`任务完成，线程暂停${pauseTime}秒`);
+                    await sleep(pauseTime);
                     } catch (error) {
                         if (error.response && error.response.data.message === 'Faucet is overloading, please try again') {
                             attempts++;
